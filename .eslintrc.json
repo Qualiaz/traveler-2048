@@ -7,7 +7,7 @@
   "parser": "@typescript-eslint/parser",
   "plugins": ["@typescript-eslint", "prettier"],
   "rules": {
-    "prettier/prettier": "error",
+    "no-shadow": ["error", { "allow": ["Direction"] }],
     "no-restricted-syntax": [
       "error",
       {
