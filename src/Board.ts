@@ -7,9 +7,9 @@ import {
 } from './interfaces.ts'
 
 export default class Board implements IBoard {
-  board: (number | SpecialItems)[][]
+  board: BlockItem[][]
 
-  boardHistory: { board: number[][]; key: Direction | null }[]
+  boardHistory: { board: BlockItem[][]; key: Direction | null }[]
 
   specialItem: SpecialItems
 
@@ -38,12 +38,19 @@ export default class Board implements IBoard {
     this.board = Array.from({ length: 4 }, () => Array(4).fill(0))
     this.spanNumber()
     this.spanNumber()
-    console.log(this.board)
+
+    // will move
+    this.updateBoardHistory({ board: this.board, key: null })
     return this
   }
 
   spanNumber(): IBoard {
     return this.spanBlock(2)
+  }
+
+  private setRandomizedSpecialItem(): IBoard {
+    this.specialItem = Math.random() < 0.5 ? 'joker' : 'genius'
+    return this
   }
 
   spanSpecialItem(): IBoard {
@@ -73,10 +80,18 @@ export default class Board implements IBoard {
   }
 
   updateBoard(direction: Direction): IBoard {
+    // this.spanNumber()
+    this.spanSpecialItem()
+    this.moveBlock(direction)
+    this.updateBoardHistory({ board: this.board, key: null })
     return this
   }
 
-  updateBoardHistory(newBoard: { board: number[][]; key: Direction }): IBoard {
+  updateBoardHistory(newBoard: {
+    board: BlockItem[][]
+    key: Direction | null
+  }): IBoard {
+    this.boardHistory.push(newBoard)
     return this
   }
 
@@ -94,11 +109,99 @@ export default class Board implements IBoard {
     return first + second
   }
 
-  moveBlock(block: number): IBoard {
+  moveBlock(direction: Direction): IBoard {
+    const newBoard: BlockItem[][] = this.board.map((row) => [...row])
+
+    const isEmptyCell = (row: number, col: number) => newBoard[row][col] === 0
+
+    const moveBlockTo = (
+      row: number,
+      col: number,
+      newRow: number,
+      newCol: number
+    ) => {
+      newBoard[newRow][newCol] = newBoard[row][col]
+      newBoard[row][col] = 0
+    }
+
+    if (direction === Direction.Up) {
+      for (let col = 0; col < 4; col += 1) {
+        let newRow = 0
+        for (let row = 0; row < 4; row += 1) {
+          if (!isEmptyCell(row, col)) {
+            if (row !== newRow) {
+              moveBlockTo(row, col, newRow, col)
+            }
+            newRow += 1
+          }
+        }
+      }
+    } else if (direction === Direction.Down) {
+      for (let col = 0; col < 4; col += 1) {
+        let newRow = 3
+        for (let row = 3; row >= 0; row -= 1) {
+          if (!isEmptyCell(row, col)) {
+            if (row !== newRow) {
+              moveBlockTo(row, col, newRow, col)
+            }
+            newRow -= 1
+          }
+        }
+      }
+    } else if (direction === Direction.Left) {
+      for (let row = 0; row < 4; row += 1) {
+        let newCol = 0
+        for (let col = 0; col < 4; col += 1) {
+          if (!isEmptyCell(row, col)) {
+            if (col !== newCol) {
+              moveBlockTo(row, col, row, newCol)
+            }
+            newCol += 1
+          }
+        }
+      }
+    } else if (direction === Direction.Right) {
+      for (let row = 0; row < 4; row += 1) {
+        let newCol = 3
+        for (let col = 3; col >= 0; col -= 1) {
+          if (!isEmptyCell(row, col)) {
+            if (col !== newCol) {
+              moveBlockTo(row, col, row, newCol)
+            }
+            newCol -= 1
+          }
+        }
+      }
+    }
+
+    // update the board and history
+    this.board = newBoard
+    this.updateBoardHistory({ board: this.board, key: direction })
+
     return this
   }
 
   controller(): IBoard {
+    document.addEventListener('keydown', (event) => {
+      switch (event.key) {
+        case this.controllerKeys.up:
+          this.updateBoard(Direction.Up)
+          break
+        case this.controllerKeys.down:
+          this.updateBoard(Direction.Down)
+          break
+        case this.controllerKeys.left:
+          this.updateBoard(Direction.Left)
+          break
+        case this.controllerKeys.right:
+          this.updateBoard(Direction.Right)
+          break
+        default:
+          null
+      }
+      console.log(this.board)
+    })
+
     return this
   }
 
