@@ -1,5 +1,6 @@
-type SpecialItems = 'joker' | 'genius'
-type SpanBlock = 2 | SpecialItems
+export type SpecialItems = 'joker' | 'genius'
+export type SpanBlock = 2 | SpecialItems
+export type BlockItem = number | SpecialItems
 
 export enum Direction {
   Up = 'up',
@@ -10,7 +11,7 @@ export enum Direction {
 }
 
 export interface IBoard {
-  board: number[][]
+  board: (number | SpecialItems)[][]
   boardHistory: { board: number[][]; key: Direction | null }[]
   specialItem: SpecialItems
   controllerKeys: {
@@ -21,8 +22,9 @@ export interface IBoard {
     space: string
   }
 
-  initilalBoard(): IBoard
-  spanBlock(block: SpanBlock): IBoard
+  initialBoard(): IBoard
+  spanNumber(): IBoard
+  spanSpecialItem(): IBoard
   updateBoard(direction: Direction): IBoard
   updateBoardHistory(newBoard: { board: number[][]; key: Direction }): IBoard
   revertBoard(steps: number): IBoard
@@ -36,9 +38,9 @@ export interface IBoard {
   // view
   generateBoardMarkup(): string
   render(): HTMLDivElement
-  updateDisplay(): void
-  animateMove(direction: Direction): void
-  animateSpanBlock(block: SpanBlock): void
+  updateDisplay(): IBoard
+  animateMove(direction: Direction): IBoard
+  animateSpanBlock(block: SpanBlock): IBoard
 }
 
 export interface IGame {
