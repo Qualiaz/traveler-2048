@@ -39,7 +39,6 @@ export default class Board implements IBoard {
     this.spanNumber()
     this.spanNumber()
 
-    // will move
     this.updateBoardHistory({ board: this.board, key: null })
     console.log(this.board)
     return this
@@ -47,6 +46,15 @@ export default class Board implements IBoard {
 
   spanNumber(): IBoard {
     return this.spanBlock(2)
+  }
+
+  private areLastTwoBoardsEqual(
+    arr: { board: BlockItem[][]; key: Direction | null }[]
+  ): boolean {
+    if (arr.length < 2) return false
+    const lastBoard = JSON.stringify(arr[arr.length - 1].board)
+    const secondLastBoard = JSON.stringify(arr[arr.length - 2].board)
+    return lastBoard === secondLastBoard
   }
 
   private setRandomizedSpecialItem(): IBoard {
@@ -83,15 +91,18 @@ export default class Board implements IBoard {
   }
 
   updateBoard(direction: Direction): IBoard {
-    this.moveBlock(direction)
-    console.log(this.board)
-    this.mergeBlocks(direction)
+    this.initBlockAction(direction)
 
-    if (Math.random() < 0.5) {
-      this.spanSpecialItem()
-    } else {
-      this.spanNumber()
+    if (!this.areLastTwoBoardsEqual(this.boardHistory)) {
+      if (Math.random() < 0.1) {
+        this.spanSpecialItem()
+      } else {
+        this.spanNumber()
+      }
     }
+    this.updateBoardHistory({ board: this.board, key: Direction.Up })
+    console.log(this.board)
+
     return this
   }
 
@@ -99,7 +110,8 @@ export default class Board implements IBoard {
     board: BlockItem[][]
     key: Direction | null
   }): IBoard {
-    this.boardHistory.push(newBoard)
+    const boardCopy = JSON.parse(JSON.stringify(newBoard))
+    this.boardHistory.push(boardCopy)
     return this
   }
 
@@ -109,7 +121,7 @@ export default class Board implements IBoard {
 
   /* eslint-disable class-methods-use-this */
   // prettier-ignore
-  moveBlock(direction: Direction): IBoard {
+  private moveBlock(direction: Direction): IBoard {
       const checkNextCell = (cell: [number, number]): BlockItem => {
           const [row, col] = cell;
           if (direction === Direction.Right) {
@@ -133,7 +145,6 @@ export default class Board implements IBoard {
           if (nextCell === undefined || !curCell) return;
 
           if (nextCell === 0 && curCell) {
-            console.log(curCell)
               while (this.board[rowIndex][nextColIndex] === 0) {
                   this.board[rowIndex][nextColIndex] = this.board[rowIndex][nextColIndex + (direction === Direction.Right ? -1 : 1)];
                   this.board[rowIndex][nextColIndex + (direction === Direction.Right ? -1 : 1)] = 0;
@@ -188,46 +199,50 @@ export default class Board implements IBoard {
       return this;
   }
 
-  mergeBlocks(direction: Direction): IBoard {
-    const mergeCells = (
-      rowIndex: number,
-      colIndex: number,
-      nextIndex: number,
-      isHorizontal: boolean
-    ) => {
-      const nextValue = isHorizontal
-        ? this.board[rowIndex][nextIndex]
-        : this.board[nextIndex][colIndex]
+  private mergeBlocks(
+    rowIndex: number,
+    colIndex: number,
+    nextIndex: number,
+    isHorizontal: boolean
+  ): IBoard {
+    const nextValue = isHorizontal
+      ? this.board[rowIndex][nextIndex]
+      : this.board[nextIndex][colIndex]
 
-      if (nextValue === 0) return
+    if (nextValue === 0) return this
 
-      const currentValue = this.board[rowIndex][colIndex]
+    const currentValue = this.board[rowIndex][colIndex]
 
-      if (
-        currentValue === nextValue ||
-        nextValue === 'genius' ||
-        currentValue === 'genius'
-      ) {
-        if (typeof currentValue === 'number')
-          this.board[rowIndex][colIndex] = (currentValue as number) * 2
-        else this.board[rowIndex][colIndex] = (nextValue as number) * 2
-        // if the cur cell is a genius, multiply the other one
+    if (
+      currentValue === nextValue ||
+      nextValue === 'genius' ||
+      currentValue === 'genius'
+    ) {
+      if (typeof currentValue === 'number')
+        this.board[rowIndex][colIndex] = (currentValue as number) * 2
+      else this.board[rowIndex][colIndex] = (nextValue as number) * 2
+      // if the cur cell is a genius, multiply the other one
 
-        if (isHorizontal) this.board[rowIndex][nextIndex] = 0
-        else this.board[nextIndex][colIndex] = 0
-      } else if (nextValue === 'joker' || currentValue === 'joker') {
-        if (typeof currentValue === 'number')
-          this.board[rowIndex][colIndex] =
-            (currentValue as number) > 2 ? (currentValue as number) / 2 : 0
-        else this.board[rowIndex][colIndex] = (nextValue as number) * 2
+      if (isHorizontal) this.board[rowIndex][nextIndex] = 0
+      else this.board[nextIndex][colIndex] = 0
+    }
+    //
+    if (nextValue === 'joker' || currentValue === 'joker') {
+      if (typeof currentValue === 'number')
+        this.board[rowIndex][colIndex] =
+          (currentValue as number) > 2 ? (currentValue as number) / 2 : 0
+      else
+        this.board[rowIndex][colIndex] =
+          (nextValue as number) > 2 ? (nextValue as number) / 2 : 0
 
-        if (isHorizontal) this.board[rowIndex][nextIndex] = 0
-        else this.board[nextIndex][colIndex] = 0
-      } else {
-        this.moveBlock(direction)
-      }
+      if (isHorizontal) this.board[rowIndex][nextIndex] = 0
+      else this.board[nextIndex][colIndex] = 0
     }
 
+    return this
+  }
+
+  initBlockAction(direction: Direction): IBoard {
     if (direction === Direction.Right) {
       for (let rowIndex = 0; rowIndex < this.board.length; rowIndex += 1) {
         for (
@@ -237,7 +252,8 @@ export default class Board implements IBoard {
         ) {
           const prevColIndex = colIndex - 1
           if (prevColIndex >= 0) {
-            mergeCells(rowIndex, colIndex, prevColIndex, true)
+            this.mergeBlocks(rowIndex, colIndex, prevColIndex, true)
+            this.moveBlock(direction)
           }
         }
       }
@@ -252,7 +268,8 @@ export default class Board implements IBoard {
         ) {
           const nextColIndex = colIndex + 1
           if (nextColIndex < this.board[rowIndex].length) {
-            mergeCells(rowIndex, colIndex, nextColIndex, true)
+            this.mergeBlocks(rowIndex, colIndex, nextColIndex, true)
+            this.moveBlock(direction)
           }
         }
       }
@@ -267,7 +284,8 @@ export default class Board implements IBoard {
         ) {
           const prevRowIndex = rowIndex - 1
           if (prevRowIndex >= 0) {
-            mergeCells(rowIndex, colIndex, prevRowIndex, false)
+            this.mergeBlocks(rowIndex, colIndex, prevRowIndex, false)
+            this.moveBlock(direction)
           }
         }
       }
@@ -278,12 +296,12 @@ export default class Board implements IBoard {
         for (let rowIndex = 0; rowIndex < this.board.length; rowIndex += 1) {
           const nextRowIndex = rowIndex + 1
           if (nextRowIndex < this.board.length) {
-            mergeCells(rowIndex, colIndex, nextRowIndex, false)
+            this.mergeBlocks(rowIndex, colIndex, nextRowIndex, false)
+            this.moveBlock(direction)
           }
         }
       }
     }
-
     return this
   }
 
@@ -292,6 +310,7 @@ export default class Board implements IBoard {
       switch (event.key) {
         case this.controllerKeys.up:
           this.updateBoard(Direction.Up)
+
           break
         case this.controllerKeys.down:
           this.updateBoard(Direction.Down)
@@ -301,6 +320,9 @@ export default class Board implements IBoard {
           break
         case this.controllerKeys.right:
           this.updateBoard(Direction.Right)
+          break
+        case 'h':
+          console.log(this.boardHistory)
           break
         default:
           console.log('no key')

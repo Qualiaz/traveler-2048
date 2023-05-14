@@ -29,10 +29,8 @@ export interface IBoard {
   // prettier-ignore
   updateBoardHistory(newBoard: { board: BlockItem[][]; key: Direction | null }): IBoard
   revertBoard(steps: number): IBoard
-  moveBlock(direction: Direction): IBoard
-  mergeBlocks(direction: Direction): IBoard
-  // blockMove(direction: Direction): IBoard
-  // controller
+
+  initBlockAction(direction: Direction): IBoard
   controller(): IBoard
 
   // view
