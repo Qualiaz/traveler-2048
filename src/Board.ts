@@ -38,7 +38,6 @@ export default class Board implements IBoard {
     this.board = Array.from({ length: 4 }, () => Array(4).fill(0))
     this.spanNumber()
     this.spanNumber()
-    this.spanSpecialItem()
 
     // will move
     this.updateBoardHistory({ board: this.board, key: null })
@@ -88,7 +87,7 @@ export default class Board implements IBoard {
     console.log(this.board)
     this.mergeBlocks(direction)
 
-    if (Math.random() < 0.1) {
+    if (Math.random() < 0.5) {
       this.spanSpecialItem()
     } else {
       this.spanNumber()
@@ -111,90 +110,120 @@ export default class Board implements IBoard {
   /* eslint-disable class-methods-use-this */
   // prettier-ignore
   moveBlock(direction: Direction): IBoard {
-    const checkNextCell = (cell: [number, number]): BlockItem => {
-        const [row, col] = cell;
-        if (direction === Direction.Right) {
-            return this.board[row][col + 1];
-        }
-        if (direction === Direction.Left) {
-            return this.board[row][col - 1];
-        }
-        return 'joker';
-    };
+      const checkNextCell = (cell: [number, number]): BlockItem => {
+          const [row, col] = cell;
+          if (direction === Direction.Right) {
+              return this.board[row][col + 1];
+          }
+          if (direction === Direction.Left) {
+              return this.board[row][col - 1];
+          }
+          if (direction === Direction.Down) {
+            return this.board[row + 1] && this.board[row + 1][col];
+          }
+          if (direction === Direction.Up) {
+            return this.board[row - 1] && this.board[row - 1][col];
+          }
+          return 'joker';
+      };
 
-    const moveCellsHorizontal = (rowIndex: number, colIndex: number, nextColIndex: number) => {
+      const moveCellsHorizontal = (rowIndex: number, colIndex: number, nextColIndex: number) => {
+          const curCell = this.board[rowIndex][colIndex];
+          const nextCell = checkNextCell([rowIndex, colIndex]);
+          if (nextCell === undefined || !curCell) return;
+
+          if (nextCell === 0 && curCell) {
+            console.log(curCell)
+              while (this.board[rowIndex][nextColIndex] === 0) {
+                  this.board[rowIndex][nextColIndex] = this.board[rowIndex][nextColIndex + (direction === Direction.Right ? -1 : 1)];
+                  this.board[rowIndex][nextColIndex + (direction === Direction.Right ? -1 : 1)] = 0;
+                  nextColIndex += direction === Direction.Right ? 1 : -1;
+              }
+          }
+      };
+
+      const moveCellsVertical = (rowIndex: number, colIndex: number, nextRowIndex: number) => {
         const curCell = this.board[rowIndex][colIndex];
         const nextCell = checkNextCell([rowIndex, colIndex]);
         if (nextCell === undefined || !curCell) return;
-
+    
         if (nextCell === 0 && curCell) {
-          console.log(curCell)
-            while (this.board[rowIndex][nextColIndex] === 0) {
-                this.board[rowIndex][nextColIndex] = this.board[rowIndex][nextColIndex + (direction === Direction.Right ? -1 : 1)];
-                this.board[rowIndex][nextColIndex + (direction === Direction.Right ? -1 : 1)] = 0;
-                nextColIndex += direction === Direction.Right ? 1 : -1;
-            }
+          while (this.board[nextRowIndex] && this.board[nextRowIndex][colIndex] === 0) {
+            this.board[nextRowIndex][colIndex] = this.board[nextRowIndex + (direction === Direction.Down ? -1 : 1)][colIndex];
+            this.board[nextRowIndex + (direction === Direction.Down ? -1 : 1)][colIndex] = 0;
+            nextRowIndex += direction === Direction.Down ? 1 : -1;
+          }
         }
-    };
+      };
+    
+    
 
-    if (direction === Direction.Right) {
-        for (let rowIndex = 0; rowIndex < this.board.length; rowIndex += 1) {
-            for (let colIndex = 3; colIndex >= 0; colIndex -= 1) {
-                moveCellsHorizontal(rowIndex, colIndex, colIndex + 1);
-            }
+      if (direction === Direction.Right) {
+          for (let rowIndex = 0; rowIndex < this.board.length; rowIndex += 1) {
+              for (let colIndex = 3; colIndex >= 0; colIndex -= 1) {
+                  moveCellsHorizontal(rowIndex, colIndex, colIndex + 1);
+              }
+          }
+      } else if (direction === Direction.Left) {
+          for (let rowIndex = 0; rowIndex < this.board.length; rowIndex += 1) {
+              for (let colIndex = 0; colIndex < this.board[rowIndex].length; colIndex += 1) {
+                  moveCellsHorizontal(rowIndex, colIndex, colIndex - 1);
+              }
+          }
+      } else if (direction === Direction.Down) {
+        for (let colIndex = 0; colIndex < this.board[0].length; colIndex += 1) {
+            for (let rowIndex = this.board.length - 2 ; rowIndex >= 0 ; rowIndex -= 1 ) {
+            moveCellsVertical(rowIndex, colIndex, rowIndex + 1);
+          }
         }
-    } else if (direction === Direction.Left) {
-        for (let rowIndex = 0; rowIndex < this.board.length; rowIndex += 1) {
-            for (let colIndex = 0; colIndex < this.board[rowIndex].length; colIndex += 1) {
-                moveCellsHorizontal(rowIndex, colIndex, colIndex - 1);
-            }
+      }
+        else if(direction === Direction.Up){
+          for(let colIndex = 0; colIndex < this.board[0].length; colIndex += 1){
+            for(let rowIndex = 1; rowIndex < this.board.length; rowIndex += 1){
+              moveCellsVertical(rowIndex,colIndex,rowIndex - 1)
+          }
         }
-    }
+      }
 
-    return this;
-}
+      return this;
+  }
 
   mergeBlocks(direction: Direction): IBoard {
-    const mergeCellsHorizontal = (
+    const mergeCells = (
       rowIndex: number,
       colIndex: number,
-      nextColIndex: number
+      nextIndex: number,
+      isHorizontal: boolean
     ) => {
-      if (this.board[rowIndex][nextColIndex] === 0) return
+      const nextValue = isHorizontal
+        ? this.board[rowIndex][nextIndex]
+        : this.board[nextIndex][colIndex]
+
+      if (nextValue === 0) return
+
+      const currentValue = this.board[rowIndex][colIndex]
 
       if (
-        this.board[rowIndex][colIndex] === this.board[rowIndex][nextColIndex] ||
-        this.board[rowIndex][nextColIndex] === 'genius' ||
-        this.board[rowIndex][colIndex] === 'genius'
+        currentValue === nextValue ||
+        nextValue === 'genius' ||
+        currentValue === 'genius'
       ) {
-        if (typeof this.board[rowIndex][colIndex] === 'number')
-          this.board[rowIndex][colIndex] =
-            (this.board[rowIndex][colIndex] as number) * 2
-        else
-          this.board[rowIndex][colIndex] =
-            (this.board[rowIndex][nextColIndex] as number) * 2
+        if (typeof currentValue === 'number')
+          this.board[rowIndex][colIndex] = (currentValue as number) * 2
+        else this.board[rowIndex][colIndex] = (nextValue as number) * 2
         // if the cur cell is a genius, multiply the other one
 
-        this.board[rowIndex][nextColIndex] = 0
-      }
-      //
-      else if (
-        this.board[rowIndex][nextColIndex] === 'joker' ||
-        this.board[rowIndex][colIndex] === 'joker'
-      ) {
-        if (typeof this.board[rowIndex][colIndex] === 'number')
+        if (isHorizontal) this.board[rowIndex][nextIndex] = 0
+        else this.board[nextIndex][colIndex] = 0
+      } else if (nextValue === 'joker' || currentValue === 'joker') {
+        if (typeof currentValue === 'number')
           this.board[rowIndex][colIndex] =
-            (this.board[rowIndex][colIndex] as number) > 2
-              ? (this.board[rowIndex][colIndex] as number) / 2
-              : 0
-        else
-          this.board[rowIndex][colIndex] =
-            (this.board[rowIndex][nextColIndex] as number) * 2
+            (currentValue as number) > 2 ? (currentValue as number) / 2 : 0
+        else this.board[rowIndex][colIndex] = (nextValue as number) * 2
 
-        this.board[rowIndex][nextColIndex] = 0
-      }
-      //
-      else {
+        if (isHorizontal) this.board[rowIndex][nextIndex] = 0
+        else this.board[nextIndex][colIndex] = 0
+      } else {
         this.moveBlock(direction)
       }
     }
@@ -208,7 +237,7 @@ export default class Board implements IBoard {
         ) {
           const prevColIndex = colIndex - 1
           if (prevColIndex >= 0) {
-            mergeCellsHorizontal(rowIndex, colIndex, prevColIndex)
+            mergeCells(rowIndex, colIndex, prevColIndex, true)
           }
         }
       }
@@ -223,7 +252,33 @@ export default class Board implements IBoard {
         ) {
           const nextColIndex = colIndex + 1
           if (nextColIndex < this.board[rowIndex].length) {
-            mergeCellsHorizontal(rowIndex, colIndex, nextColIndex)
+            mergeCells(rowIndex, colIndex, nextColIndex, true)
+          }
+        }
+      }
+    }
+
+    if (direction === Direction.Down) {
+      for (let colIndex = 0; colIndex < this.board[0].length; colIndex += 1) {
+        for (
+          let rowIndex = this.board.length - 1;
+          rowIndex >= 0;
+          rowIndex -= 1
+        ) {
+          const prevRowIndex = rowIndex - 1
+          if (prevRowIndex >= 0) {
+            mergeCells(rowIndex, colIndex, prevRowIndex, false)
+          }
+        }
+      }
+    }
+
+    if (direction === Direction.Up) {
+      for (let colIndex = 0; colIndex < this.board[0].length; colIndex += 1) {
+        for (let rowIndex = 0; rowIndex < this.board.length; rowIndex += 1) {
+          const nextRowIndex = rowIndex + 1
+          if (nextRowIndex < this.board.length) {
+            mergeCells(rowIndex, colIndex, nextRowIndex, false)
           }
         }
       }
