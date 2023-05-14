@@ -38,9 +38,11 @@ export default class Board implements IBoard {
     this.board = Array.from({ length: 4 }, () => Array(4).fill(0))
     this.spanNumber()
     this.spanNumber()
+    this.spanSpecialItem()
 
     // will move
     this.updateBoardHistory({ board: this.board, key: null })
+    console.log(this.board)
     return this
   }
 
@@ -54,7 +56,9 @@ export default class Board implements IBoard {
   }
 
   spanSpecialItem(): IBoard {
-    return this.spanBlock(this.specialItem)
+    this.setRandomizedSpecialItem()
+    this.spanBlock(this.specialItem)
+    return this
   }
 
   private spanBlock(block: SpanBlock): IBoard {
@@ -66,7 +70,7 @@ export default class Board implements IBoard {
         }
       })
       return acc
-    }, [] as { row: number; col: number }[])
+    }, [] as { row: BlockItem; col: BlockItem }[])
 
     // if there are no empty cells, do nothing
     if (emptyCells.length === 0) return this
@@ -74,16 +78,21 @@ export default class Board implements IBoard {
     // randomly select an empty cell and insert the block
     const index = Math.floor(Math.random() * emptyCells.length)
     const { row, col } = emptyCells[index]
-    this.board[row][col] = block
+    this.board[row as number][col as number] = block
 
     return this
   }
 
   updateBoard(direction: Direction): IBoard {
-    // this.spanNumber()
-    this.spanSpecialItem()
     this.moveBlock(direction)
-    this.updateBoardHistory({ board: this.board, key: null })
+    console.log(this.board)
+    this.mergeBlocks(direction)
+
+    if (Math.random() < 0.1) {
+      this.spanSpecialItem()
+    } else {
+      this.spanNumber()
+    }
     return this
   }
 
@@ -100,83 +109,125 @@ export default class Board implements IBoard {
   }
 
   /* eslint-disable class-methods-use-this */
-  randomizeSpecialItem(): SpecialItems {
-    return 'joker'
-  }
-
-  /* eslint-disable class-methods-use-this */
-  combineNumbers(first: number, second: number): number {
-    return first + second
-  }
-
+  // prettier-ignore
   moveBlock(direction: Direction): IBoard {
-    const newBoard: BlockItem[][] = this.board.map((row) => [...row])
-
-    const isEmptyCell = (row: number, col: number) => newBoard[row][col] === 0
-
-    const moveBlockTo = (
-      row: number,
-      col: number,
-      newRow: number,
-      newCol: number
-    ) => {
-      newBoard[newRow][newCol] = newBoard[row][col]
-      newBoard[row][col] = 0
-    }
-
-    if (direction === Direction.Up) {
-      for (let col = 0; col < 4; col += 1) {
-        let newRow = 0
-        for (let row = 0; row < 4; row += 1) {
-          if (!isEmptyCell(row, col)) {
-            if (row !== newRow) {
-              moveBlockTo(row, col, newRow, col)
-            }
-            newRow += 1
-          }
+    const checkNextCell = (cell: [number, number]): BlockItem => {
+        const [row, col] = cell;
+        if (direction === Direction.Right) {
+            return this.board[row][col + 1];
         }
-      }
-    } else if (direction === Direction.Down) {
-      for (let col = 0; col < 4; col += 1) {
-        let newRow = 3
-        for (let row = 3; row >= 0; row -= 1) {
-          if (!isEmptyCell(row, col)) {
-            if (row !== newRow) {
-              moveBlockTo(row, col, newRow, col)
-            }
-            newRow -= 1
-          }
+        if (direction === Direction.Left) {
+            return this.board[row][col - 1];
         }
-      }
+        return 'joker';
+    };
+
+    const moveCellsHorizontal = (rowIndex: number, colIndex: number, nextColIndex: number) => {
+        const curCell = this.board[rowIndex][colIndex];
+        const nextCell = checkNextCell([rowIndex, colIndex]);
+        if (nextCell === undefined || !curCell) return;
+
+        if (nextCell === 0 && curCell) {
+          console.log(curCell)
+            while (this.board[rowIndex][nextColIndex] === 0) {
+                this.board[rowIndex][nextColIndex] = this.board[rowIndex][nextColIndex + (direction === Direction.Right ? -1 : 1)];
+                this.board[rowIndex][nextColIndex + (direction === Direction.Right ? -1 : 1)] = 0;
+                nextColIndex += direction === Direction.Right ? 1 : -1;
+            }
+        }
+    };
+
+    if (direction === Direction.Right) {
+        for (let rowIndex = 0; rowIndex < this.board.length; rowIndex += 1) {
+            for (let colIndex = 3; colIndex >= 0; colIndex -= 1) {
+                moveCellsHorizontal(rowIndex, colIndex, colIndex + 1);
+            }
+        }
     } else if (direction === Direction.Left) {
-      for (let row = 0; row < 4; row += 1) {
-        let newCol = 0
-        for (let col = 0; col < 4; col += 1) {
-          if (!isEmptyCell(row, col)) {
-            if (col !== newCol) {
-              moveBlockTo(row, col, row, newCol)
+        for (let rowIndex = 0; rowIndex < this.board.length; rowIndex += 1) {
+            for (let colIndex = 0; colIndex < this.board[rowIndex].length; colIndex += 1) {
+                moveCellsHorizontal(rowIndex, colIndex, colIndex - 1);
             }
-            newCol += 1
-          }
         }
+    }
+
+    return this;
+}
+
+  mergeBlocks(direction: Direction): IBoard {
+    const mergeCellsHorizontal = (
+      rowIndex: number,
+      colIndex: number,
+      nextColIndex: number
+    ) => {
+      if (this.board[rowIndex][nextColIndex] === 0) return
+
+      if (
+        this.board[rowIndex][colIndex] === this.board[rowIndex][nextColIndex] ||
+        this.board[rowIndex][nextColIndex] === 'genius' ||
+        this.board[rowIndex][colIndex] === 'genius'
+      ) {
+        if (typeof this.board[rowIndex][colIndex] === 'number')
+          this.board[rowIndex][colIndex] =
+            (this.board[rowIndex][colIndex] as number) * 2
+        else
+          this.board[rowIndex][colIndex] =
+            (this.board[rowIndex][nextColIndex] as number) * 2
+        // if the cur cell is a genius, multiply the other one
+
+        this.board[rowIndex][nextColIndex] = 0
       }
-    } else if (direction === Direction.Right) {
-      for (let row = 0; row < 4; row += 1) {
-        let newCol = 3
-        for (let col = 3; col >= 0; col -= 1) {
-          if (!isEmptyCell(row, col)) {
-            if (col !== newCol) {
-              moveBlockTo(row, col, row, newCol)
-            }
-            newCol -= 1
+      //
+      else if (
+        this.board[rowIndex][nextColIndex] === 'joker' ||
+        this.board[rowIndex][colIndex] === 'joker'
+      ) {
+        if (typeof this.board[rowIndex][colIndex] === 'number')
+          this.board[rowIndex][colIndex] =
+            (this.board[rowIndex][colIndex] as number) > 2
+              ? (this.board[rowIndex][colIndex] as number) / 2
+              : 0
+        else
+          this.board[rowIndex][colIndex] =
+            (this.board[rowIndex][nextColIndex] as number) * 2
+
+        this.board[rowIndex][nextColIndex] = 0
+      }
+      //
+      else {
+        this.moveBlock(direction)
+      }
+    }
+
+    if (direction === Direction.Right) {
+      for (let rowIndex = 0; rowIndex < this.board.length; rowIndex += 1) {
+        for (
+          let colIndex = this.board[rowIndex].length - 1;
+          colIndex >= 0;
+          colIndex -= 1
+        ) {
+          const prevColIndex = colIndex - 1
+          if (prevColIndex >= 0) {
+            mergeCellsHorizontal(rowIndex, colIndex, prevColIndex)
           }
         }
       }
     }
 
-    // update the board and history
-    this.board = newBoard
-    this.updateBoardHistory({ board: this.board, key: direction })
+    if (direction === Direction.Left) {
+      for (let rowIndex = 0; rowIndex < this.board.length; rowIndex += 1) {
+        for (
+          let colIndex = 0;
+          colIndex < this.board[rowIndex].length;
+          colIndex += 1
+        ) {
+          const nextColIndex = colIndex + 1
+          if (nextColIndex < this.board[rowIndex].length) {
+            mergeCellsHorizontal(rowIndex, colIndex, nextColIndex)
+          }
+        }
+      }
+    }
 
     return this
   }
@@ -197,9 +248,8 @@ export default class Board implements IBoard {
           this.updateBoard(Direction.Right)
           break
         default:
-          null
+          console.log('no key')
       }
-      console.log(this.board)
     })
 
     return this
