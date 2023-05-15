@@ -5,6 +5,10 @@ import {
   Direction,
   BlockItem
 } from './interfaces.ts'
+import './Board.scss'
+
+import imgJoker from './assets/joker-it.png'
+import imgGenius from './assets/genius-plato.jpg'
 
 export default class Board implements IBoard {
   board: BlockItem[][]
@@ -40,7 +44,7 @@ export default class Board implements IBoard {
     this.spanNumber()
 
     this.updateBoardHistory({ board: this.board, key: null })
-    console.log(this.board)
+    this.updateDisplay()
     return this
   }
 
@@ -100,8 +104,11 @@ export default class Board implements IBoard {
         this.spanNumber()
       }
     }
+
+    // console.log('HOW MANY TIMES')
     this.updateBoardHistory({ board: this.board, key: Direction.Up })
     console.log(this.board)
+    this.updateDisplay()
 
     return this
   }
@@ -116,6 +123,7 @@ export default class Board implements IBoard {
   }
 
   revertBoard(steps: number): IBoard {
+    console.log(steps)
     return this
   }
 
@@ -252,6 +260,7 @@ export default class Board implements IBoard {
         ) {
           const prevColIndex = colIndex - 1
           if (prevColIndex >= 0) {
+            this.moveBlock(direction)
             this.mergeBlocks(rowIndex, colIndex, prevColIndex, true)
             this.moveBlock(direction)
           }
@@ -268,6 +277,7 @@ export default class Board implements IBoard {
         ) {
           const nextColIndex = colIndex + 1
           if (nextColIndex < this.board[rowIndex].length) {
+            this.moveBlock(direction)
             this.mergeBlocks(rowIndex, colIndex, nextColIndex, true)
             this.moveBlock(direction)
           }
@@ -284,6 +294,7 @@ export default class Board implements IBoard {
         ) {
           const prevRowIndex = rowIndex - 1
           if (prevRowIndex >= 0) {
+            this.moveBlock(direction)
             this.mergeBlocks(rowIndex, colIndex, prevRowIndex, false)
             this.moveBlock(direction)
           }
@@ -296,6 +307,7 @@ export default class Board implements IBoard {
         for (let rowIndex = 0; rowIndex < this.board.length; rowIndex += 1) {
           const nextRowIndex = rowIndex + 1
           if (nextRowIndex < this.board.length) {
+            this.moveBlock(direction)
             this.mergeBlocks(rowIndex, colIndex, nextRowIndex, false)
             this.moveBlock(direction)
           }
@@ -342,14 +354,40 @@ export default class Board implements IBoard {
   }
 
   updateDisplay(): IBoard {
+    for (let row = 0; row < 4; row += 1) {
+      for (let col = 0; col < 4; col += 1) {
+        const cell = document.getElementById(
+          `cell-${row * 4 + col + 1}`
+        ) as HTMLElement
+        cell.innerText = ''
+        if (this.board[row][col] === 0) continue
+
+        if (this.board[row][col] === 'joker') {
+          const jokerImg = document.createElement('img')
+          jokerImg.src = imgJoker
+          cell.appendChild(jokerImg)
+          continue
+        }
+        if (this.board[row][col] === 'genius') {
+          const geniusImg = document.createElement('img')
+          geniusImg.src = imgGenius
+          cell.appendChild(geniusImg)
+          continue
+        }
+        cell.innerText = this.board[row][col] as string
+      }
+    }
+
     return this
   }
 
   animateMove(direction: Direction): IBoard {
+    console.log(direction)
     return this
   }
 
   animateSpanBlock(block: SpanBlock): IBoard {
+    console.log(block)
     return this
   }
 }

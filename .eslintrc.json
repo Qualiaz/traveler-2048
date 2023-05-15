@@ -1,5 +1,4 @@
 {
-  "extends": ["airbnb", "plugin:@typescript-eslint/recommended", "prettier"],
   "env": {
     "browser": true,
     "node": true
@@ -8,6 +7,12 @@
   "plugins": ["@typescript-eslint", "prettier"],
   "rules": {
     "no-shadow": ["error", { "allow": ["Direction"] }],
+    "no-continue": "off",
+    "no-console": "off",
+    "no-param-reassign": "off",
+    "@typescript-eslint/no-unused-vars": "off",
+    "class-methods-use-this": "off",
+
     "no-restricted-syntax": [
       "error",
       {
@@ -15,5 +20,6 @@
         "message": "Function declarations are not allowed."
       }
     ]
-  }
+  },
+  "extends": ["airbnb", "plugin:@typescript-eslint/recommended", "prettier"]
 }
