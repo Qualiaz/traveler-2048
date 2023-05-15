@@ -7,13 +7,13 @@ export enum Direction {
   Down = 'down',
   Right = 'right',
   Left = 'left'
-  // Reverse = 'reverse'
 }
 
 export interface IBoard {
   board: (number | SpecialItems)[][]
   boardHistory: { board: BlockItem[][]; key: Direction | null }[]
   specialItem: SpecialItems
+  travelPoints: number
   controllerKeys: {
     up: string
     down: string

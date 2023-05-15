@@ -18,6 +18,8 @@ export default class Board implements IBoard {
 
   specialItem: SpecialItems
 
+  travelPoints: number
+
   controllerKeys: {
     up: string
     down: string
@@ -30,7 +32,7 @@ export default class Board implements IBoard {
     Array(4).fill(0)
   )
 
-  private isSpecialItemOnBoard: boolean = false
+  private isSpecialItemOnBoard = false
 
   constructor() {
     this.board = Array.from({ length: 4 }, () => Array(4).fill(0))
@@ -43,15 +45,16 @@ export default class Board implements IBoard {
       right: 'ArrowRight',
       space: 'Space'
     }
+    this.travelPoints = 0
   }
 
   private didBlocksMove(
-    oldMatrix: BlockItem[][],
-    newMatrix: BlockItem[][]
+    oldBoard: BlockItem[][],
+    newBoard: BlockItem[][]
   ): boolean {
-    for (let i = 0; i < 4; i++) {
-      for (let j = 0; j < 4; j++) {
-        if (oldMatrix[i][j] !== newMatrix[i][j]) {
+    for (let i = 0; i < 4; i += 1) {
+      for (let j = 0; j < 4; j += 1) {
+        if (oldBoard[i][j] !== newBoard[i][j]) {
           return true
         }
       }
@@ -61,9 +64,9 @@ export default class Board implements IBoard {
 
   private checkSpecialItemOnBoard(): boolean {
     this.isSpecialItemOnBoard = false
-    this.board.forEach(row => {
-      row.forEach(cell => {
-        if (cell === 'joker' || cell === 'genius'){
+    this.board.forEach((row) => {
+      row.forEach((cell) => {
+        if (cell === 'joker' || cell === 'genius') {
           this.isSpecialItemOnBoard = true
         }
       })
@@ -88,10 +91,12 @@ export default class Board implements IBoard {
     const blocksMoved = this.didBlocksMove(this.secondLastBoard, this.board)
     this.checkSpecialItemOnBoard()
 
-    console.log(this.board, this.secondLastBoard)
-
     if (blocksMoved) {
-      if (Math.random() < 0.8 && !this.isSpecialItemOnBoard) {
+      if (Math.random() < 0.04) {
+        this.travelPoints += 1
+        console.log(this.travelPoints)
+      }
+      if (Math.random() < 0.1 && !this.isSpecialItemOnBoard) {
         this.spanSpecialItem()
       } else {
         this.spanNumber()
@@ -101,6 +106,32 @@ export default class Board implements IBoard {
 
     this.updateDisplay()
 
+    return this
+  }
+
+  updateBoardHistory(newBoard: {
+    board: BlockItem[][]
+    key: Direction | null
+  }): IBoard {
+    const boardCopy = _.cloneDeep(newBoard)
+    console.log(boardCopy)
+    this.boardHistory.push(boardCopy)
+    return this
+  }
+
+  private removeLastBoardFromHistory(): IBoard {
+    this.boardHistory.pop()
+    return this
+  }
+
+  revertBoard(): IBoard {
+    if (this.boardHistory.length < 2 || !this.travelPoints) return this
+    this.board = _.cloneDeep(
+      this.boardHistory[this.boardHistory.length - 2].board
+    )
+    this.travelPoints -= 1
+    this.removeLastBoardFromHistory()
+    this.updateDisplay()
     return this
   }
 
@@ -138,20 +169,6 @@ export default class Board implements IBoard {
     const { row, col } = emptyCells[index]
     this.board[row as number][col as number] = block
 
-    return this
-  }
-
-  updateBoardHistory(newBoard: {
-    board: BlockItem[][]
-    key: Direction | null
-  }): IBoard {
-    const boardCopy = _.cloneDeep(newBoard)
-    this.boardHistory.push(boardCopy)
-    return this
-  }
-
-  revertBoard(steps: number): IBoard {
-    console.log(steps)
     return this
   }
 
@@ -347,10 +364,10 @@ export default class Board implements IBoard {
 
   controller(): IBoard {
     document.addEventListener('keydown', (event) => {
-      switch (event.key) {
+      // console.log(event.code)
+      switch (event.code) {
         case this.controllerKeys.up:
           this.updateBoard(Direction.Up)
-
           break
         case this.controllerKeys.down:
           this.updateBoard(Direction.Down)
@@ -361,8 +378,11 @@ export default class Board implements IBoard {
         case this.controllerKeys.right:
           this.updateBoard(Direction.Right)
           break
-        case 'h':
+        case 'KeyH':
           console.log(this.boardHistory)
+          break
+        case this.controllerKeys.space:
+          this.revertBoard()
           break
         default:
           console.log('no key')
@@ -405,6 +425,11 @@ export default class Board implements IBoard {
         cell.innerText = this.board[row][col] as string
       }
     }
+
+    const travelPoints = document.getElementById(
+      'travelPoints'
+    ) as HTMLSpanElement
+    travelPoints.innerText = this.travelPoints.toString()
 
     return this
   }
