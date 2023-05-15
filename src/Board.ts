@@ -1,3 +1,4 @@
+import _ from 'lodash'
 import {
   IBoard,
   SpecialItems,
@@ -25,6 +26,12 @@ export default class Board implements IBoard {
     space: string
   }
 
+  private secondLastBoard: BlockItem[][] = Array.from({ length: 4 }, () =>
+    Array(4).fill(0)
+  )
+
+  private isSpecialItemOnBoard: boolean = false
+
   constructor() {
     this.board = Array.from({ length: 4 }, () => Array(4).fill(0))
     this.boardHistory = []
@@ -38,6 +45,33 @@ export default class Board implements IBoard {
     }
   }
 
+  private didBlocksMove(
+    oldMatrix: BlockItem[][],
+    newMatrix: BlockItem[][]
+  ): boolean {
+    for (let i = 0; i < 4; i++) {
+      for (let j = 0; j < 4; j++) {
+        if (oldMatrix[i][j] !== newMatrix[i][j]) {
+          return true
+        }
+      }
+    }
+    return false
+  }
+
+  private checkSpecialItemOnBoard(): boolean {
+    this.isSpecialItemOnBoard = false
+    this.board.forEach(row => {
+      row.forEach(cell => {
+        if (cell === 'joker' || cell === 'genius'){
+          this.isSpecialItemOnBoard = true
+        }
+      })
+    })
+
+    return this.isSpecialItemOnBoard
+  }
+
   initialBoard(): IBoard {
     this.board = Array.from({ length: 4 }, () => Array(4).fill(0))
     this.spanNumber()
@@ -48,17 +82,30 @@ export default class Board implements IBoard {
     return this
   }
 
-  spanNumber(): IBoard {
-    return this.spanBlock(2)
+  updateBoard(direction: Direction): IBoard {
+    this.secondLastBoard = _.cloneDeep(this.board)
+    this.initBlockAction(direction)
+    const blocksMoved = this.didBlocksMove(this.secondLastBoard, this.board)
+    this.checkSpecialItemOnBoard()
+
+    console.log(this.board, this.secondLastBoard)
+
+    if (blocksMoved) {
+      if (Math.random() < 0.8 && !this.isSpecialItemOnBoard) {
+        this.spanSpecialItem()
+      } else {
+        this.spanNumber()
+      }
+      this.updateBoardHistory({ board: this.board, key: Direction.Up })
+    }
+
+    this.updateDisplay()
+
+    return this
   }
 
-  private areLastTwoBoardsEqual(
-    arr: { board: BlockItem[][]; key: Direction | null }[]
-  ): boolean {
-    if (arr.length < 2) return false
-    const lastBoard = JSON.stringify(arr[arr.length - 1].board)
-    const secondLastBoard = JSON.stringify(arr[arr.length - 2].board)
-    return lastBoard === secondLastBoard
+  spanNumber(): IBoard {
+    return this.spanBlock(2)
   }
 
   private setRandomizedSpecialItem(): IBoard {
@@ -94,30 +141,11 @@ export default class Board implements IBoard {
     return this
   }
 
-  updateBoard(direction: Direction): IBoard {
-    this.initBlockAction(direction)
-
-    if (!this.areLastTwoBoardsEqual(this.boardHistory)) {
-      if (Math.random() < 0.1) {
-        this.spanSpecialItem()
-      } else {
-        this.spanNumber()
-      }
-    }
-
-    // console.log('HOW MANY TIMES')
-    this.updateBoardHistory({ board: this.board, key: Direction.Up })
-    console.log(this.board)
-    this.updateDisplay()
-
-    return this
-  }
-
   updateBoardHistory(newBoard: {
     board: BlockItem[][]
     key: Direction | null
   }): IBoard {
-    const boardCopy = JSON.parse(JSON.stringify(newBoard))
+    const boardCopy = _.cloneDeep(newBoard)
     this.boardHistory.push(boardCopy)
     return this
   }
