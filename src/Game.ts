@@ -1,6 +1,5 @@
 import Board from './Board.ts'
 import { IBoard, IGame } from './interfaces.ts'
-import { Direction } from './interfaces.ts'
 
 export default class Game implements IGame {
   board: IBoard

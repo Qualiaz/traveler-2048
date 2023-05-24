@@ -7,7 +7,6 @@ import {
   BlockItem,
 } from './interfaces.ts'
 import './Board.scss'
-import Game from './Game.ts'
 import imgJoker from './assets/joker-it.png'
 import imgGenius from './assets/genius-plato.jpg'
 
