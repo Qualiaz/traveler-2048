@@ -6,14 +6,13 @@ export enum Direction {
   Up = 'up',
   Down = 'down',
   Right = 'right',
-  Left = 'left'
+  Left = 'left',
 }
 
 export interface IBoard {
   board: (number | SpecialItems)[][]
   boardHistory: { board: BlockItem[][]; key: Direction | null }[]
   specialItem: SpecialItems
-  travelPoints: number
   controllerKeys: {
     up: string
     down: string
@@ -21,6 +20,7 @@ export interface IBoard {
     right: string
     space: string
   }
+  travelerPoints: number
 
   initialBoard(): IBoard
   spanNumber(): IBoard
@@ -29,15 +29,16 @@ export interface IBoard {
   // prettier-ignore
   updateBoardHistory(newBoard: { board: BlockItem[][]; key: Direction | null }): IBoard
   revertBoard(steps: number): IBoard
+  controller(): IBoard
 
   initBlockAction(direction: Direction): IBoard
-  controller(): IBoard
+  init(): IBoard
 
   // view
   generateBoardMarkup(): string
   render(): HTMLDivElement
   updateDisplay(): IBoard
-  animateMove(direction: Direction): IBoard
+  initRenderActionBlocks(direction: Direction): IBoard
   animateSpanBlock(block: SpanBlock): IBoard
 }
 
@@ -45,13 +46,21 @@ export interface IGame {
   board: IBoard
   score: number
   highestScore: number
-  timeTravelPoints: number
+  travelerPoints: number
+  controllerKeys: {
+    up: string
+    down: string
+    left: string
+    right: string
+    space: string
+  }
+
   gameOver(): IGame
   newGame(): IGame
-
+  updateTravelerPoints(): IGame
   controller(): IGame // new game / how to play / change colors / board controller
+  updateScore(): IGame
+  init(): void
 
-  displayScore(): IGame
   render(): void
-  on(): void
 }

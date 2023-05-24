@@ -4,10 +4,10 @@ import {
   SpecialItems,
   SpanBlock,
   Direction,
-  BlockItem
+  BlockItem,
 } from './interfaces.ts'
 import './Board.scss'
-
+import Game from './Game.ts'
 import imgJoker from './assets/joker-it.png'
 import imgGenius from './assets/genius-plato.jpg'
 
@@ -18,7 +18,7 @@ export default class Board implements IBoard {
 
   specialItem: SpecialItems
 
-  travelPoints: number
+  travelerPoints: number
 
   controllerKeys: {
     up: string
@@ -38,14 +38,14 @@ export default class Board implements IBoard {
     this.board = Array.from({ length: 4 }, () => Array(4).fill(0))
     this.boardHistory = []
     this.specialItem = Math.random() < 0.5 ? 'joker' : 'genius'
+    this.travelerPoints = 0
     this.controllerKeys = {
       up: 'ArrowUp',
       down: 'ArrowDown',
       left: 'ArrowLeft',
       right: 'ArrowRight',
-      space: 'Space'
+      space: 'Space',
     }
-    this.travelPoints = 0
   }
 
   private didBlocksMove(
@@ -77,11 +77,17 @@ export default class Board implements IBoard {
 
   initialBoard(): IBoard {
     this.board = Array.from({ length: 4 }, () => Array(4).fill(0))
+    // prettier-ignore
+    // this.board = [[2,'joker',2,2],
+    //               [0,0,0,0],
+    //               [0,0,0,0],
+    //               [0,0,0,0]],
     this.spanNumber()
     this.spanNumber()
 
     this.updateBoardHistory({ board: this.board, key: null })
     this.updateDisplay()
+
     return this
   }
 
@@ -92,10 +98,9 @@ export default class Board implements IBoard {
     this.checkSpecialItemOnBoard()
 
     if (blocksMoved) {
-      if (Math.random() < 0.04) {
-        this.travelPoints += 1
-        console.log(this.travelPoints)
-      }
+      const event = new Event('boardMoved')
+      document.dispatchEvent(event)
+
       if (Math.random() < 0.1 && !this.isSpecialItemOnBoard) {
         this.spanSpecialItem()
       } else {
@@ -125,13 +130,17 @@ export default class Board implements IBoard {
   }
 
   revertBoard(): IBoard {
-    if (this.boardHistory.length < 2 || !this.travelPoints) return this
+    console.log(this.travelerPoints)
+    if (this.boardHistory.length < 2 || !this.travelerPoints) return this
     this.board = _.cloneDeep(
       this.boardHistory[this.boardHistory.length - 2].board
     )
-    this.travelPoints -= 1
     this.removeLastBoardFromHistory()
     this.updateDisplay()
+
+    const boardRevertedEvent = new Event('boardReverted')
+    document.dispatchEvent(boardRevertedEvent)
+
     return this
   }
 
@@ -189,7 +198,7 @@ export default class Board implements IBoard {
           if (direction === Direction.Up) {
             return this.board[row - 1] && this.board[row - 1][col];
           }
-          return 'joker';
+          return 'joker'
       };
 
       const moveCellsHorizontal = (rowIndex: number, colIndex: number, nextColIndex: number) => {
@@ -262,9 +271,12 @@ export default class Board implements IBoard {
       ? this.board[rowIndex][nextIndex]
       : this.board[nextIndex][colIndex]
 
-    if (nextValue === 0) return this
-
     const currentValue = this.board[rowIndex][colIndex]
+
+    const prevValue = isHorizontal ? this.board[rowIndex][colIndex - 1] : null
+
+    if (nextValue === 0 && !prevValue) return this
+    // if (currentValue === 0) return this
 
     if (
       currentValue === nextValue ||
@@ -324,7 +336,7 @@ export default class Board implements IBoard {
           if (nextColIndex < this.board[rowIndex].length) {
             this.moveBlock(direction)
             this.mergeBlocks(rowIndex, colIndex, nextColIndex, true)
-            this.moveBlock(direction)
+            // this.moveBlock(direction)
           }
         }
       }
@@ -362,9 +374,13 @@ export default class Board implements IBoard {
     return this
   }
 
+  /* eslint-disable class-methods-use-this */
+  generateBoardMarkup(): string {
+    return ''
+  }
+
   controller(): IBoard {
     document.addEventListener('keydown', (event) => {
-      // console.log(event.code)
       switch (event.code) {
         case this.controllerKeys.up:
           this.updateBoard(Direction.Up)
@@ -388,13 +404,7 @@ export default class Board implements IBoard {
           console.log('no key')
       }
     })
-
     return this
-  }
-
-  /* eslint-disable class-methods-use-this */
-  generateBoardMarkup(): string {
-    return ''
   }
 
   render(): HTMLDivElement {
@@ -408,6 +418,7 @@ export default class Board implements IBoard {
           `cell-${row * 4 + col + 1}`
         ) as HTMLElement
         cell.innerText = ''
+        this.updateColor(cell)
         if (this.board[row][col] === 0) continue
 
         if (this.board[row][col] === 'joker') {
@@ -423,24 +434,72 @@ export default class Board implements IBoard {
           continue
         }
         cell.innerText = this.board[row][col] as string
+        this.updateColor(cell)
       }
     }
+    return this
+  }
 
-    const travelPoints = document.getElementById(
-      'travelPoints'
-    ) as HTMLSpanElement
-    travelPoints.innerText = this.travelPoints.toString()
+  private updateColor(cell: HTMLElement): IBoard {
+    const cellNumber = Number(cell.innerText)
+    switch (cellNumber) {
+      case 0:
+        cell.style.backgroundColor = '#1f1f1f'
+        break
+      case 2:
+        cell.style.backgroundColor = '#F8E3BC'
+        break
+      case 4:
+        cell.style.backgroundColor = '#FDD891'
+        break
+      case 8:
+        cell.style.backgroundColor = '#FEBE46'
+        break
+      case 16:
+        cell.style.backgroundColor = '#E9B3A7'
+        break
+      case 32:
+        cell.style.backgroundColor = '#E49887'
+        break
+      case 64:
+        cell.style.backgroundColor = '#E77056'
+        break
+      case 128:
+        cell.style.backgroundColor = '#E5DE92'
+        break
+      case 256:
+        cell.style.backgroundColor = '#DBCF5B'
+        break
+      case 512:
+        cell.style.backgroundColor = '#DFCB03'
+        break
+      case 1024:
+        cell.style.backgroundColor = '#7ACD53'
+        break
+      case 2048:
+        cell.style.backgroundColor = '#4470E2'
+        break
+      default:
+        cell.style.backgroundColor = '#681875'
+        break
+    }
 
     return this
   }
 
-  animateMove(direction: Direction): IBoard {
+  initRenderActionBlocks(direction: Direction): IBoard {
     console.log(direction)
     return this
   }
 
   animateSpanBlock(block: SpanBlock): IBoard {
     console.log(block)
+    return this
+  }
+
+  init(): IBoard {
+    this.controller()
+
     return this
   }
 }
