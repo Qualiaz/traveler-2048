@@ -47,6 +47,15 @@ export default class Board implements IBoard {
     }
   }
 
+  resetBoard(): IBoard {
+    this.travelerPoints = 0
+    this.secondLastBoard = Array.from({ length: 4 }, () => Array(4).fill(0))
+    this.boardHistory = []
+    this.initialBoard()
+
+    return this
+  }
+
   private didBlocksMove(
     oldBoard: BlockItem[][],
     newBoard: BlockItem[][]
@@ -76,11 +85,6 @@ export default class Board implements IBoard {
 
   initialBoard(): IBoard {
     this.board = Array.from({ length: 4 }, () => Array(4).fill(0))
-    // prettier-ignore
-    // this.board = [[2,'joker',2,2],
-    //               [0,0,0,0],
-    //               [0,0,0,0],
-    //               [0,0,0,0]],
     this.spanNumber()
     this.spanNumber()
 
@@ -118,7 +122,6 @@ export default class Board implements IBoard {
     key: Direction | null
   }): IBoard {
     const boardCopy = _.cloneDeep(newBoard)
-    console.log(boardCopy)
     this.boardHistory.push(boardCopy)
     return this
   }

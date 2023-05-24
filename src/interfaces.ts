@@ -33,6 +33,7 @@ export interface IBoard {
 
   initBlockAction(direction: Direction): IBoard
   init(): IBoard
+  resetBoard(): IBoard
 
   // view
   generateBoardMarkup(): string

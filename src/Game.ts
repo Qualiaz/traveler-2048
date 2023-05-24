@@ -60,6 +60,14 @@ export default class Game implements IGame {
   controller(): IGame {
     this.board.controller()
 
+    const newGameEl = document.getElementById('newGame') as HTMLButtonElement
+
+    newGameEl.addEventListener('click', () => {
+      this.board.resetBoard()
+      this.updateTravelerPoints()
+      this.updateScore()
+    })
+
     return this
   }
 
