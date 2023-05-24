@@ -1,12 +1,15 @@
 @import url('https://fonts.googleapis.com/css2?family=Keania+One&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@300;400&display=swap');
 
+html {
+  height: 100%;
+}
+
 html,
 body,
-#app,
-.board {
+#app {
   width: 100%;
-  height: auto;
+  // height: auto;
   background-color: #e7e7e7;
   font-size: 62.5%;
   padding: 0;
@@ -18,6 +21,9 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
+  height: 100%;
+  // border: 2px solid red;
+  height: 100%;
 }
 
 #app {
@@ -25,8 +31,9 @@ body {
   flex-direction: column;
   justify-content: start;
   align-items: start;
-  width: 50rem;
+  width: 51rem;
   align-items: center;
+  // padding: 3rem 0;
   // border: 3px solid red;
 }
 
@@ -84,14 +91,15 @@ body {
 }
 
 .menu {
-  width: 10rem;
-  height: 10rem;
+  // width: 10rem;
+  height: 6rem;
   color: white;
   font-size: 1.6rem;
   display: flex;
-  width: 50rem;
+  width: 51rem;
   justify-content: space-between;
   align-items: center;
+  font-family: 'Keania One', cursive;
 
   button {
     border-radius: 0.5rem;
@@ -108,18 +116,20 @@ body {
 }
 
 .modal__how-to-play {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   width: 100%;
-  background-color: rgba(255, 0, 0, 0.2);
+  height: 100vh;
+  background-color: rgba(254, 229, 180, 0.6);
   z-index: 100;
   display: flex;
-  align-items: center;
+  // align-items: center;
+
   justify-content: center;
   backdrop-filter: blur(5px);
   padding: 5rem;
-  transition: 1s all;
+  overflow: scroll;
 
   .how-to-play__container {
     display: flex;
@@ -129,12 +139,12 @@ body {
     border-radius: 2rem;
     min-width: 70rem;
     max-width: 70rem;
-
+    max-height: 90rem;
     font-size: 1.6rem;
     padding: 2rem;
     position: relative;
-    transition: 10s all;
-    transform: translateY(10px);
+    overflow: scroll;
+    animation: slideIn 1s;
 
     hr {
       margin: 1rem 0;
@@ -252,5 +262,19 @@ body {
 
   button:hover {
     text-decoration: underline;
+  }
+}
+
+@keyframes slideIn {
+  0% {
+    transform: translateY(-2rem);
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
   }
 }

@@ -48,13 +48,6 @@ export interface IGame {
   score: number
   highestScore: number
   travelerPoints: number
-  controllerKeys: {
-    up: string
-    down: string
-    left: string
-    right: string
-    space: string
-  }
 
   gameOver(): IGame
   newGame(): IGame

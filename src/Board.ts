@@ -382,13 +382,16 @@ export default class Board implements IBoard {
   }
 
   controller(): IBoard {
-    document.addEventListener('keydown', (event) => {
-      switch (event.code) {
+    document.addEventListener('keydown', (e) => {
+      switch (e.code) {
         case this.controllerKeys.up:
           this.updateBoard(Direction.Up)
+          //prevents in case of up and down scrolling
+          e.preventDefault()
           break
         case this.controllerKeys.down:
           this.updateBoard(Direction.Down)
+          e.preventDefault()
           break
         case this.controllerKeys.left:
           this.updateBoard(Direction.Left)
